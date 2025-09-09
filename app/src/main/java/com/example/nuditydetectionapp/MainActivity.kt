@@ -12,7 +12,6 @@ import androidx.appcompat.app.AppCompatActivity
 import android.widget.ImageView
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
-import android.graphics.Canvas
 import android.graphics.Color
 import androidx.appcompat.app.AlertDialog
 import com.google.android.gms.vision.Frame
@@ -47,9 +46,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun checkNudity(imageView: ImageView) {
-        var cnt = 0 // Unused in original code, kept for fidelity
-
-        // Get image bitmap from ImageView
         val bitmapImage = (imageView.drawable as? BitmapDrawable)?.bitmap
         if (bitmapImage == null) {
             AlertDialog.Builder(this)
@@ -70,12 +66,8 @@ class MainActivity : AppCompatActivity() {
             bitmapImage
         }
 
-        val bm = resizedBitmap.copy(Bitmap.Config.ARGB_8888, true)
-        var t = 0
-
-        val tempBitmap = Bitmap.createBitmap(resizedBitmap.width, resizedBitmap.height, Bitmap.Config.RGB_565)
-        val tempCanvas = Canvas(tempBitmap)
-        tempCanvas.drawBitmap(resizedBitmap, 0f, 0f, null)
+        // Copy original (so original image is inside the result)
+        val mutableBm = resizedBitmap.copy(Bitmap.Config.ARGB_8888, true)
 
         val faceDetector = FaceDetector.Builder(applicationContext)
             .setTrackingEnabled(false)
@@ -101,12 +93,12 @@ class MainActivity : AppCompatActivity() {
             val x2 = (x1 + thisFace.width.toInt()).coerceAtMost(resizedBitmap.width - 1)
             val y2 = (y1 + thisFace.height.toInt()).coerceAtMost(resizedBitmap.height - 1)
 
-            for (i1 in x1 until x2 + 1) {
-                for (j1 in y1 until y2 + 1) {
+            for (i1 in x1..x2) {
+                for (j1 in y1..y2) {
                     val pixel = resizedBitmap.getPixel(i1, j1)
                     val r = Color.red(pixel)
-                    val b = Color.blue(pixel)
                     val g = Color.green(pixel)
+                    val b = Color.blue(pixel)
 
                     if (classifySkin(r, g, b)) {
                         facePixel++
@@ -115,19 +107,25 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Fix: Create a mutable copy of tempBitmap for pixel manipulation
-        val mutableBm = tempBitmap.copy(Bitmap.Config.ARGB_8888, true)
-
+        // Apply color logic over original
+        var t = 0
         for (x in 0 until resizedBitmap.width) {
             for (y in 0 until resizedBitmap.height) {
                 val pixel = resizedBitmap.getPixel(x, y)
                 val r = Color.red(pixel)
-                val b = Color.blue(pixel)
                 val g = Color.green(pixel)
+                val b = Color.blue(pixel)
 
                 if (classifySkin(r, g, b)) {
                     skinPixel++
-                    mutableBm.setPixel(x, y, Color.rgb((t + 101) % 255, (10 + t) % 255, (110 + t) % 255))
+
+                    // original color logic (unchanged)
+                    val cR = (t + 101) % 255
+                    val cG = (10 + t) % 255
+                    val cB = (110 + t) % 255
+
+                    // replace with generated color
+                    mutableBm.setPixel(x, y, Color.rgb(cR, cG, cB))
                 }
             }
         }
