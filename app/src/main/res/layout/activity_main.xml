@@ -1,15 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#000000">
+    android:background="#000000"
+    android:gravity="center">
 
     <ImageView
         android:id="@+id/imageView"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:src="@drawable/sample_image"
-        android:scaleType="fitXY"
-        android:contentDescription="Processed image" />
+        android:adjustViewBounds="true"
+        android:scaleType="fitCenter"
+        android:contentDescription="Processed image"
+        android:padding="16dp"
+        android:background="#222222" />
 </LinearLayout>
