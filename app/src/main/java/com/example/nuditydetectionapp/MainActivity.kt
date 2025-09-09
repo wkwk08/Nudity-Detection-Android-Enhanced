@@ -66,7 +66,6 @@ class MainActivity : AppCompatActivity() {
             bitmapImage
         }
 
-        // Copy original (so original image is inside the result)
         val mutableBm = resizedBitmap.copy(Bitmap.Config.ARGB_8888, true)
 
         val faceDetector = FaceDetector.Builder(applicationContext)
@@ -86,48 +85,87 @@ class MainActivity : AppCompatActivity() {
         val frame = Frame.Builder().setBitmap(resizedBitmap).build()
         val faces = faceDetector.detect(frame)
 
-        for (i in 0 until faces.size()) {
-            val thisFace = faces.valueAt(i)
-            val x1 = thisFace.position.x.toInt().coerceAtLeast(0)
-            val y1 = thisFace.position.y.toInt().coerceAtLeast(0)
-            val x2 = (x1 + thisFace.width.toInt()).coerceAtMost(resizedBitmap.width - 1)
-            val y2 = (y1 + thisFace.height.toInt()).coerceAtMost(resizedBitmap.height - 1)
+        facePixel = 0
+        skinPixel = 0
+        var t = 0
 
+        if (faces.size() == 1) {
+            // Only one face: highlight all skin pixels in the image
+            for (x in 0 until resizedBitmap.width) {
+                for (y in 0 until resizedBitmap.height) {
+                    val pixel = resizedBitmap.getPixel(x, y)
+                    val r = Color.red(pixel)
+                    val g = Color.green(pixel)
+                    val b = Color.blue(pixel)
+
+                    if (classifySkin(r, g, b)) {
+                        skinPixel++
+                        mutableBm.setPixel(x, y, Color.rgb((t + 101) % 255, (10 + t) % 255, (110 + t) % 255))
+                    }
+                }
+            }
+            // Count skin pixels in the face bounding box for statistics
+            val face = faces.valueAt(0)
+            val x1 = face.position.x.toInt().coerceAtLeast(0)
+            val y1 = face.position.y.toInt().coerceAtLeast(0)
+            val x2 = (x1 + face.width.toInt()).coerceAtMost(resizedBitmap.width - 1)
+            val y2 = (y1 + face.height.toInt()).coerceAtMost(resizedBitmap.height - 1)
             for (i1 in x1..x2) {
                 for (j1 in y1..y2) {
                     val pixel = resizedBitmap.getPixel(i1, j1)
                     val r = Color.red(pixel)
                     val g = Color.green(pixel)
                     val b = Color.blue(pixel)
-
                     if (classifySkin(r, g, b)) {
                         facePixel++
                     }
                 }
             }
-        }
-
-        // Apply color logic over original
-        var t = 0
-        for (x in 0 until resizedBitmap.width) {
-            for (y in 0 until resizedBitmap.height) {
-                val pixel = resizedBitmap.getPixel(x, y)
-                val r = Color.red(pixel)
-                val g = Color.green(pixel)
-                val b = Color.blue(pixel)
-
-                if (classifySkin(r, g, b)) {
-                    skinPixel++
-
-                    // original color logic (unchanged)
-                    val cR = (t + 101) % 255
-                    val cG = (10 + t) % 255
-                    val cB = (110 + t) % 255
-
-                    // replace with generated color
-                    mutableBm.setPixel(x, y, Color.rgb(cR, cG, cB))
+        } else if (faces.size() > 1) {
+            // Multiple faces: highlight only skin pixels inside the largest face bounding box
+            // Find largest face
+            var largestFace = faces.valueAt(0)
+            var largestArea = largestFace.width * largestFace.height
+            for (i in 1 until faces.size()) {
+                val f = faces.valueAt(i)
+                val area = f.width * f.height
+                if (area > largestArea) {
+                    largestFace = f
+                    largestArea = area
                 }
             }
+            val x1 = largestFace.position.x.toInt().coerceAtLeast(0)
+            val y1 = largestFace.position.y.toInt().coerceAtLeast(0)
+            val x2 = (x1 + largestFace.width.toInt()).coerceAtMost(resizedBitmap.width - 1)
+            val y2 = (y1 + largestFace.height.toInt()).coerceAtMost(resizedBitmap.height - 1)
+            for (x in x1..x2) {
+                for (y in y1..y2) {
+                    val pixel = resizedBitmap.getPixel(x, y)
+                    val r = Color.red(pixel)
+                    val g = Color.green(pixel)
+                    val b = Color.blue(pixel)
+                    if (classifySkin(r, g, b)) {
+                        skinPixel++
+                        mutableBm.setPixel(x, y, Color.rgb((t + 101) % 255, (10 + t) % 255, (110 + t) % 255))
+                    }
+                }
+            }
+            facePixel = skinPixel // For multiple faces, facePixel = skinPixel in largest face
+        } else {
+            // No faces detected: fallback to original logic (highlight all skin pixels)
+            for (x in 0 until resizedBitmap.width) {
+                for (y in 0 until resizedBitmap.height) {
+                    val pixel = resizedBitmap.getPixel(x, y)
+                    val r = Color.red(pixel)
+                    val g = Color.green(pixel)
+                    val b = Color.blue(pixel)
+                    if (classifySkin(r, g, b)) {
+                        skinPixel++
+                        mutableBm.setPixel(x, y, Color.rgb((t + 101) % 255, (10 + t) % 255, (110 + t) % 255))
+                    }
+                }
+            }
+            facePixel = 0
         }
 
         imageView.setImageBitmap(mutableBm)
