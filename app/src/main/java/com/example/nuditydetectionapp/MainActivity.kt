@@ -164,7 +164,7 @@ fun WelcomeScreen(onStartClick: () -> Unit) {
                 .align(Alignment.BottomCenter)
                 .height(340.dp)
                 .background(
-                    color = Color(0xFFFF8A80),
+                    color = Color(0xFFF87171),
                     shape = RoundedCornerShape(
                         topStart = 40.dp,
                         topEnd = 40.dp,
@@ -212,7 +212,7 @@ fun WelcomeScreen(onStartClick: () -> Unit) {
                             .height(48.dp)
                             .width(120.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF933C3C)
+                            containerColor = Color(0xFFAD2E2E)
                         ),
                         shape = RoundedCornerShape(24.dp)
                     ) {
