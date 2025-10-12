@@ -283,9 +283,9 @@ fun DetectionScreen(
             Image(
                 painter = painterResource(
                     id = if (isSafetyModeEnabled) {
-                        R.drawable.to_on_toggle
+                        R.drawable.toggle_is_on
                     } else {
-                        R.drawable.to_off_toggle
+                        R.drawable.toggle_is_off
                     }
                 ),
                 contentDescription = "Toggle Status",
