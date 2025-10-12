@@ -14,6 +14,8 @@ import android.media.projection.MediaProjectionManager
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -29,6 +31,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.ui.res.painterResource
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.ui.draw.shadow
 
 class MainActivity : AppCompatActivity() {
 
@@ -340,21 +343,22 @@ fun DetectionScreen(
             Spacer(modifier = Modifier.height(40.dp))
 
             // Toggle button
+            val interactionSource = remember { MutableInteractionSource() }
+            val isPressed by interactionSource.collectIsPressedAsState()
+
             Box(
                 modifier = Modifier
                     .background(
-                        color = if (isSafetyModeEnabled) {
-                            Color(0xFF51955F) // ON button background
-                        } else {
-                            Color(0xFF955151) // OFF button background
-                        },
+                        color = if (isSafetyModeEnabled) Color(0xFF51955F) else Color(0xFF955151),
                         shape = RoundedCornerShape(24.dp)
                     )
                     .height(48.dp)
                     .width(140.dp)
-                    .clickable {
-                        onToggleSafetyMode(!isSafetyModeEnabled)
-                    },
+                    .offset(y = if (isPressed) 4.dp else 0.dp) // Moves down when pressed
+                    .clickable(
+                        interactionSource = interactionSource,
+                        indication = null // No highlight/shadow on press/long press
+                    ) { onToggleSafetyMode(!isSafetyModeEnabled) },
                 contentAlignment = Alignment.Center
             ) {
                 Row(
