@@ -153,53 +153,35 @@ fun WelcomeScreen(onStartClick: () -> Unit) {
             contentDescription = null,
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .offset(x = (-20).dp, y = (-300).dp)
-                .size(width = 300.dp, height = 150.dp)
+                .offset(x = (-44).dp, y = (-260).dp)
+                .size(width = 300.dp, height = 200.dp)
         )
 
-        Column(
+        // Welcome card anchored to bottom
+        Box(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+                .fillMaxWidth()
+                .align(Alignment.BottomCenter)
+                .height(340.dp)
+                .background(
+                    color = Color(0xFFFF8A80),
+                    shape = RoundedCornerShape(
+                        topStart = 40.dp,
+                        topEnd = 40.dp,
+                        bottomStart = 0.dp,
+                        bottomEnd = 0.dp
+                    )
+                )
         ) {
-            Spacer(modifier = Modifier.weight(1f))
-
-            Image(
-                painter = painterResource(id = R.drawable.sensivue_logo),
-                contentDescription = "Sensivue Logo",
-                modifier = Modifier
-                    .size(80.dp)
-                    .padding(bottom = 8.dp)
-            )
-
-            Text(
-                text = "Sensivue",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Normal,
-                color = Color.Black,
-                letterSpacing = 2.sp
-            )
-
-            Spacer(modifier = Modifier.height(40.dp))
-
-            // Welcome card
             Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        color = Color(0xFFFF8A80),
-                        shape = RoundedCornerShape(
-                            topStart = 40.dp,
-                            topEnd = 40.dp,
-                            bottomStart = 0.dp,
-                            bottomEnd = 0.dp
-                        )
-                    )
-                    .padding(32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .fillMaxSize()
+                    .padding(horizontal = 32.dp, vertical = 32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Top
             ) {
+                Spacer(modifier = Modifier.height(24.dp))
+
                 Text(
                     text = "Welcome",
                     fontSize = 28.sp,
@@ -219,7 +201,6 @@ fun WelcomeScreen(onStartClick: () -> Unit) {
 
                 Spacer(modifier = Modifier.height(28.dp))
 
-                // Rounded start button as in Figma
                 Button(
                     onClick = onStartClick,
                     modifier = Modifier
@@ -238,8 +219,32 @@ fun WelcomeScreen(onStartClick: () -> Unit) {
                     )
                 }
             }
+        }
 
-            Spacer(modifier = Modifier.weight(1f))
+        // Sensivue logo and text centered, but OUTSIDE the welcome card
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.Center)
+                .padding(bottom = 200.dp), // Move up so it's not inside the card
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.sensivue_logo),
+                contentDescription = "Sensivue Logo",
+                modifier = Modifier
+                    .size(80.dp)
+                    .padding(bottom = 8.dp)
+            )
+
+            Text(
+                text = "Sensivue",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Normal,
+                color = Color.Black,
+                letterSpacing = 2.sp
+            )
         }
     }
 }
