@@ -283,7 +283,7 @@ fun DetectionScreen(
                     }
                 ),
                 contentDescription = "Toggle Status",
-                modifier = Modifier.size(120.dp)
+                modifier = Modifier.size(150.dp)
             )
 
             Spacer(modifier = Modifier.height(32.dp))
