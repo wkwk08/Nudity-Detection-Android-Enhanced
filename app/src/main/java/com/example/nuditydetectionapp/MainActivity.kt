@@ -240,8 +240,8 @@ fun WelcomeScreen(onStartClick: () -> Unit) {
 
             Text(
                 text = "Sensivue",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Normal,
+                fontSize = 30.sp,
+                fontWeight = FontWeight.Bold,
                 color = Color.Black,
                 letterSpacing = 2.sp
             )
