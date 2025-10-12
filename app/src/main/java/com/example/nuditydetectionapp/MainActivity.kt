@@ -290,7 +290,7 @@ fun DetectionScreen(
 
             Text(
                 text = "NUDITY DETECTION",
-                fontSize = 20.sp,
+                fontSize = 25.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.Black
             )
