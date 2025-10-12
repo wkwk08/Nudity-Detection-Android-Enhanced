@@ -10,7 +10,7 @@
     <application
         android:name=".App"
         android:allowBackup="true"
-        android:label=""
+        android:label="Sensivue"
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.Light.NoActionBar">
 
