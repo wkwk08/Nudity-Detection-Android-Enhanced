@@ -261,9 +261,9 @@ fun DetectionScreen(
     onToggleSafetyMode: (Boolean) -> Unit
 ) {
     val backgroundColor = if (isSafetyModeEnabled) {
-        Color(0xFFB8E6BD)
+        Color(0xFFC5FFB3) // ON background
     } else {
-        Color(0xFFE8B5A0)
+        Color(0xFFFFC9B3) // OFF background
     }
 
     Box(
@@ -317,18 +317,19 @@ fun DetectionScreen(
 
             Spacer(modifier = Modifier.height(40.dp))
 
+            // Toggle button
             Box(
                 modifier = Modifier
                     .background(
                         color = if (isSafetyModeEnabled) {
-                            Color(0xFF66BB6A)
+                            Color(0xFF51955F) // ON button background
                         } else {
-                            Color(0xFFBFAEAE)
+                            Color(0xFF955151) // OFF button background
                         },
                         shape = RoundedCornerShape(24.dp)
                     )
                     .height(48.dp)
-                    .width(100.dp)
+                    .width(140.dp)
                     .clickable {
                         onToggleSafetyMode(!isSafetyModeEnabled)
                     },
@@ -343,10 +344,10 @@ fun DetectionScreen(
                 ) {
                     Text(
                         text = if (isSafetyModeEnabled) "ON" else "OFF",
-                        fontSize = 14.sp,
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        modifier = Modifier.padding(start = 12.dp)
+                        color = if (isSafetyModeEnabled) Color(0xFFB0EC92) else Color(0xFFEC9292), // ON/OFF text color
+                        modifier = Modifier.padding(start = 16.dp)
                     )
 
                     Box(
@@ -354,9 +355,9 @@ fun DetectionScreen(
                             .size(40.dp)
                             .background(
                                 color = if (isSafetyModeEnabled) {
-                                    Color(0xFF4CAF50)
+                                    Color(0xFF4CEE6F) // ON circle
                                 } else {
-                                    Color(0xFFD32F2F)
+                                    Color(0xFFD32F2F) // OFF circle color
                                 },
                                 shape = RoundedCornerShape(50.dp)
                             )
