@@ -234,7 +234,7 @@ fun WelcomeScreen(onStartClick: () -> Unit) {
                 painter = painterResource(id = R.drawable.sensivue_logo),
                 contentDescription = "Sensivue Logo",
                 modifier = Modifier
-                    .size(80.dp)
+                    .size(100.dp)
                     .padding(bottom = 8.dp)
             )
 
