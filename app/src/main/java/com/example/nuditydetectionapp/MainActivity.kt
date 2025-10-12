@@ -177,7 +177,7 @@ fun WelcomeScreen(onStartClick: () -> Unit) {
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontal = 32.dp, vertical = 32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
+                horizontalAlignment = Alignment.Start,
                 verticalArrangement = Arrangement.Top
             ) {
                 Spacer(modifier = Modifier.height(24.dp))
@@ -195,28 +195,34 @@ fun WelcomeScreen(onStartClick: () -> Unit) {
                     text = "Welcome! This app helps ensure safety by detecting and filtering inappropriate or explicit images with advanced AI technology.",
                     fontSize = 14.sp,
                     color = Color.Black,
-                    textAlign = TextAlign.Center,
+                    textAlign = TextAlign.Justify,
                     lineHeight = 20.sp
                 )
 
                 Spacer(modifier = Modifier.height(28.dp))
 
-                Button(
-                    onClick = onStartClick,
-                    modifier = Modifier
-                        .height(48.dp)
-                        .width(120.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF933C3C)
-                    ),
-                    shape = RoundedCornerShape(24.dp)
+                // Center the button
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
                 ) {
-                    Text(
-                        text = "Start",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
+                    Button(
+                        onClick = onStartClick,
+                        modifier = Modifier
+                            .height(48.dp)
+                            .width(120.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF933C3C)
+                        ),
+                        shape = RoundedCornerShape(24.dp)
+                    ) {
+                        Text(
+                            text = "Start",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
                 }
             }
         }
