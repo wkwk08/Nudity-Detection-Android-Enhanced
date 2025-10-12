@@ -128,7 +128,8 @@ fun NudityDetectionApp(
                 } else {
                     onDisableGuard()
                 }
-            }
+            },
+            onBack = { currentScreen = "welcome" } // <-- Add this line
         )
     }
 }
