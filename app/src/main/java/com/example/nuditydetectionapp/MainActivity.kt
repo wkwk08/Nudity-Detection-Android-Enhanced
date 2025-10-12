@@ -27,6 +27,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.Image
 import androidx.compose.ui.res.painterResource
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 
 class MainActivity : AppCompatActivity() {
 
@@ -258,7 +260,8 @@ fun WelcomeScreen(onStartClick: () -> Unit) {
 @Composable
 fun DetectionScreen(
     isSafetyModeEnabled: Boolean,
-    onToggleSafetyMode: (Boolean) -> Unit
+    onToggleSafetyMode: (Boolean) -> Unit,
+    onBack: () -> Unit // Add this parameter to handle back navigation
 ) {
     val backgroundColor = if (isSafetyModeEnabled) {
         Color(0xFFC5FFB3) // ON background
@@ -276,9 +279,27 @@ fun DetectionScreen(
                 .fillMaxSize()
                 .padding(32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Top // Change to Top to place arrow at the top
         ) {
-            Spacer(modifier = Modifier.height(40.dp))
+            // Back arrow at the top-left
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(
+                    onClick = onBack,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Color.Black
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
 
             Image(
                 painter = painterResource(
