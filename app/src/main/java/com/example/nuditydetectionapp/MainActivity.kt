@@ -153,7 +153,7 @@ fun WelcomeScreen(onStartClick: () -> Unit) {
             contentDescription = null,
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .offset(x = (-44).dp, y = (-260).dp)
+                .offset(x = (-45).dp, y = (-260).dp)
                 .size(width = 300.dp, height = 200.dp)
         )
 
