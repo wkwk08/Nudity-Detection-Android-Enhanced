@@ -10,9 +10,9 @@
     <application
         android:name=".App"
         android:allowBackup="true"
-        android:label="@string/app_name"
+        android:label=""
         android:supportsRtl="true"
-        android:theme="@style/Theme.AppCompat.Light.DarkActionBar">
+        android:theme="@style/Theme.AppCompat.Light.NoActionBar">
 
         <!-- Main entry point -->
         <activity
