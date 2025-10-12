@@ -154,7 +154,7 @@ fun WelcomeScreen(onStartClick: () -> Unit) {
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .offset(x = (-45).dp, y = (-236).dp)
-                .size(width = 300.dp, height = 200.dp)
+                .size(width = 300.dp, height = 230.dp)
         )
 
         // Welcome card anchored to bottom
