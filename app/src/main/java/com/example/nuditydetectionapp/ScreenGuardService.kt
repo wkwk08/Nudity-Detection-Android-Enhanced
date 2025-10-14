@@ -22,194 +22,199 @@ import android.os.HandlerThread
 import android.os.IBinder
 import android.os.SystemClock
 import androidx.core.app.NotificationCompat
-import kotlin.math.min
 
 class ScreenGuardService : Service() {
 
-  private lateinit var projection: MediaProjection
-  private var virtualDisplay: VirtualDisplay? = null
-  private var imageReader: ImageReader? = null
-  private lateinit var overlay: OverlayController
-  private lateinit var engine: NudityEngine
+    private lateinit var projection: MediaProjection
+    private var virtualDisplay: VirtualDisplay? = null
+    private var imageReader: ImageReader? = null
+    private lateinit var overlay: OverlayController
+    private var classifier: NudityClassifier? = null
 
-  private var captureThread: HandlerThread? = null
-  private var captureHandler: Handler? = null
+    private var captureThread: HandlerThread? = null
+    private var captureHandler: Handler? = null
 
   // Processing cadence & anti-flicker
-  private var lastProcessMs = 0L
-  private val frameIntervalMs = 250L          // ~4 FPS
-  private var lastHitMs = 0L
-  private var overlayShown = false
+    private var lastProcessMs = 0L
+    private val frameIntervalMs = 500L
+    private var lastHitMs = 0L
+    private var overlayShown = false
   private val holdMs = 600L                   // keep overlay a bit after last hit
 
-  private var screenReceiver: BroadcastReceiver? = null
-  private var projectionCallback: MediaProjection.Callback? = null
+    private var screenReceiver: BroadcastReceiver? = null
+    private var projectionCallback: MediaProjection.Callback? = null
 
-  override fun onCreate() {
-    super.onCreate()
-    overlay = OverlayController(this)
-    engine  = NudityEngine()
+    override fun onCreate() {
+        super.onCreate()
+        overlay = OverlayController(this)
+        classifier = NudityClassifier(this)
+        startForeground(1, buildNotif("Nudity Guard is running"))
+        registerScreenOffReceiver()
+    }
 
-    startForeground(1, buildNotif("Nudity Guard is running"))
-    registerScreenOffReceiver()
-  }
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        val code = intent?.getIntExtra("resultCode", Activity.RESULT_CANCELED) ?: return START_NOT_STICKY
+        val data = intent.getParcelableExtra<Intent>("resultData") ?: return START_NOT_STICKY
 
-  override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-    val code = intent?.getIntExtra("resultCode", Activity.RESULT_CANCELED) ?: return START_NOT_STICKY
-    val data = intent.getParcelableExtra<Intent>("resultData") ?: return START_NOT_STICKY
-
-    val mpm = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-    projection = mpm.getMediaProjection(code, data)
+        val mpm = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+        projection = mpm.getMediaProjection(code, data)
 
     // Stop service if projection gets revoked by the system
-    projectionCallback = object : MediaProjection.Callback() {
-      override fun onStop() {
-        stopSelf()
-      }
-    }.also { projection.registerCallback(it, null) }
+        projectionCallback = object : MediaProjection.Callback() {
+            override fun onStop() {
+                stopSelf()
+            }
+        }.also { projection.registerCallback(it, null) }
 
-    startCapture()
-    return START_STICKY
-  }
+        startCapture()
+        return START_STICKY
+    }
 
- private fun startCapture() {
-    val dm = resources.displayMetrics
-    val w = dm.widthPixels
-    val h = dm.heightPixels
-    val d = dm.densityDpi
+    private fun startCapture() {
+        val dm = resources.displayMetrics
+        val w = dm.widthPixels
+        val h = dm.heightPixels
+        val d = dm.densityDpi
 
     // RGBA_8888 is correct (keep this)
-    imageReader = ImageReader.newInstance(w, h, PixelFormat.RGBA_8888, 2)
+        imageReader = ImageReader.newInstance(w, h, PixelFormat.RGBA_8888, 2)
 
     // IMPORTANT: use AUTO_MIRROR (more reliable for app mirroring than PUBLIC on some builds)
-    virtualDisplay = projection.createVirtualDisplay(
-        "screen_cap",
-        w, h, d,
+        virtualDisplay = projection.createVirtualDisplay(
+            "screen_cap",
+            w, h, d,
         DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,   // <— changed from PUBLIC
-        imageReader!!.surface, null, null
-    )
+            imageReader!!.surface, null, null
+        )
 
     // DEBUG: flash the overlay for 1.5s to prove it can be shown
-    overlay.show()
-    Handler(mainLooper).postDelayed({ overlay.hide() }, 1500)
+        overlay.show()
+        Handler(mainLooper).postDelayed({ overlay.hide() }, 1500)
 
-    captureThread = HandlerThread("CaptureLoop").apply { start() }
-    captureHandler = Handler(captureThread!!.looper)
+        captureThread = HandlerThread("CaptureLoop").apply { start() }
+        captureHandler = Handler(captureThread!!.looper)
 
-    imageReader!!.setOnImageAvailableListener({ reader ->
-        val now = SystemClock.uptimeMillis()
+        imageReader!!.setOnImageAvailableListener({ reader ->
+            val now = SystemClock.uptimeMillis()
 
         // throttle
-        if (now - lastProcessMs < frameIntervalMs) {
-            reader.acquireLatestImage()?.close()
-            return@setOnImageAvailableListener
-        }
-        lastProcessMs = now
+            if (now - lastProcessMs < frameIntervalMs) {
+                reader.acquireLatestImage()?.close()
+                return@setOnImageAvailableListener
+            }
+            lastProcessMs = now
 
         // Don't blur your own app
-        if (App.inForeground) {
-            overlay.hide()
-            overlayShown = false
-            reader.acquireLatestImage()?.close()
-            return@setOnImageAvailableListener
-        }
-
-        val img = reader.acquireLatestImage() ?: return@setOnImageAvailableListener
-        try {
-            val fullBmp = img.toBitmap() ?: return@setOnImageAvailableListener
-
-            // downscale for scoring
-            val shortSide = kotlin.math.min(fullBmp.width, fullBmp.height).coerceAtLeast(1)
-            val scale = if (shortSide > 480) 480f / shortSide else 1f
-            val resized = if (scale < 1f)
-                Bitmap.createScaledBitmap(
-                    fullBmp,
-                    (fullBmp.width * scale).toInt().coerceAtLeast(1),
-                    (fullBmp.height * scale).toInt().coerceAtLeast(1),
-                    true
-                )
-            else fullBmp
-
-            // Make it easier to trigger while we debug
-            val threshold = getSharedPreferences("guard", MODE_PRIVATE)
-                .getFloat("threshold", 0.30f)  // <— TEMP: was 0.60f
-            val onThresh  = threshold
-            val offThresh = (threshold - 0.08f).coerceAtLeast(0f)
-
-            val score = engine.score(resized)
-
-            // LOG what the detector sees
-            android.util.Log.d("Guard", "score=${"%.2f".format(score)}")
-
-            if (score >= onThresh) {
-                overlay.show()
-                overlay.updateBlurredFrame(fullBmp)
-                overlayShown = true
-                lastHitMs = now
-            } else {
-                val keep = overlayShown && (now - lastHitMs < holdMs)
-                if (!keep && score < offThresh) {
-                    overlay.hide()
-                    overlayShown = false
-                }
+            if (App.inForeground) {
+                overlay.hide()
+                overlayShown = false
+                reader.acquireLatestImage()?.close()
+                return@setOnImageAvailableListener
             }
-        } catch (_: Exception) {
-            // ignore a single bad frame
-        } finally {
-            img.close()
+
+            val img = reader.acquireLatestImage() ?: return@setOnImageAvailableListener
+            try {
+                val fullBmp = img.toBitmap() ?: return@setOnImageAvailableListener
+                val result = classifier?.classifyImage(fullBmp)
+
+                if (result == null) {
+                    android.util.Log.e("Guard", "Classifier returned null")
+                    return@setOnImageAvailableListener
+                }
+
+                val threshold = getSharedPreferences("guard", MODE_PRIVATE)
+                    .getFloat("threshold", 0.70f)
+
+                val nudeConfidence = result.nudeConfidence
+
+                // Log classification result for debugging
+                android.util.Log.d(
+                    "Guard",
+                    "Classification: ${if (result.isNude) "NUDE" else "SAFE"} " +
+                    "| Nude: ${(result.nudeConfidence * 100).toInt()}% " +
+                    "| Safe: ${(result.safeConfidence * 100).toInt()}% " +
+                    "| Time: ${result.processingTime}ms"
+                )
+
+                if (result.isNude && nudeConfidence >= threshold) {
+                    android.util.Log.w("Guard", "⚠️ NUDITY DETECTED - Showing overlay")
+                    overlay.show()
+                    overlay.updateBlurredFrame(fullBmp)
+                    overlayShown = true
+                    lastHitMs = now
+
+                    val nm = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+                    nm.notify(1, buildNotif("⚠️ Inappropriate content detected!"))
+                } else {
+                    val keep = overlayShown && (now - lastHitMs < holdMs)
+                    if (!keep) {
+                        overlay.hide()
+                        overlayShown = false
+
+                        val nm = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+                        nm.notify(1, buildNotif("Nudity Guard is running"))
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("Guard", "Error processing frame: ${e.message}")
+            } finally {
+                img.close()
+            }
+        }, captureHandler)
+    }
+
+    private fun registerScreenOffReceiver() {
+        screenReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                if (Intent.ACTION_SCREEN_OFF == intent?.action) stopSelf()
+            }
         }
-    }, captureHandler)
-}
-
-  private fun registerScreenOffReceiver() {
-    screenReceiver = object : BroadcastReceiver() {
-      override fun onReceive(context: Context?, intent: Intent?) {
-        if (Intent.ACTION_SCREEN_OFF == intent?.action) stopSelf()
-      }
+        registerReceiver(screenReceiver, IntentFilter(Intent.ACTION_SCREEN_OFF))
     }
-    registerReceiver(screenReceiver, IntentFilter(Intent.ACTION_SCREEN_OFF))
-  }
 
-  override fun onDestroy() {
-    try { overlay.hide() } catch (_: Exception) {}
-    try { virtualDisplay?.release() } catch (_: Exception) {}
-    try { imageReader?.close() } catch (_: Exception) {}
-    try { projectionCallback?.let { projection.unregisterCallback(it) } } catch (_: Exception) {}
-    try { projection.stop() } catch (_: Exception) {}
+    override fun onDestroy() {
+        try { overlay.hide() } catch (_: Exception) {}
+        try { virtualDisplay?.release() } catch (_: Exception) {}
+        try { imageReader?.close() } catch (_: Exception) {}
+        try { projectionCallback?.let { projection.unregisterCallback(it) } } catch (_: Exception) {}
+        try { projection.stop() } catch (_: Exception) {}
 
-    try {
-      screenReceiver?.let { unregisterReceiver(it) }
-      screenReceiver = null
-    } catch (_: Exception) {}
+        // Clean up the classifier
+        try { classifier?.close() } catch (_: Exception) {}
 
-    try {
-      captureThread?.quitSafely()
-      captureThread = null
-      captureHandler = null
-    } catch (_: Exception) {}
-    
-    super.onDestroy()
-  }
+        try {
+            screenReceiver?.let { unregisterReceiver(it) }
+            screenReceiver = null
+        } catch (_: Exception) {}
 
-  override fun onBind(intent: Intent?): IBinder? = null
+        try {
+            captureThread?.quitSafely()
+            captureThread = null
+            captureHandler = null
+        } catch (_: Exception) {}
 
-  private fun buildNotif(text: String): Notification {
-    val chId = "guard"
-    val nm = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-    if (Build.VERSION.SDK_INT >= 26) {
-      nm.createNotificationChannel(
-        NotificationChannel(
-          chId,
-          "Nudity Guard",
-          NotificationManager.IMPORTANCE_LOW
-        )
-      )
+        super.onDestroy()
     }
-    return NotificationCompat.Builder(this, chId)
-      .setSmallIcon(android.R.drawable.ic_lock_lock)
-      .setContentTitle("Nudity Guard")
-      .setContentText(text)
-      .setOngoing(true)
-      .build()
-  }
+
+    override fun onBind(intent: Intent?): IBinder? = null
+
+    private fun buildNotif(text: String): Notification {
+        val chId = "guard"
+        val nm = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        if (Build.VERSION.SDK_INT >= 26) {
+            nm.createNotificationChannel(
+                NotificationChannel(
+                    chId,
+                    "Nudity Guard",
+                    NotificationManager.IMPORTANCE_LOW
+                )
+            )
+        }
+        return NotificationCompat.Builder(this, chId)
+            .setSmallIcon(android.R.drawable.ic_lock_lock)
+            .setContentTitle("Nudity Guard")
+            .setContentText(text)
+            .setOngoing(true)
+            .build()
+    }
 }
