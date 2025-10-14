@@ -25,8 +25,8 @@ Although this repository focuses on the Android implementation, the original alg
 
 1. **Clone the repository**
 ```
-git clone https://github.com/wkwk08/Nudity-Detection-Android-Modified.git
-cd Nudity-Detection-Android-Modified
+git clone https://github.com/wkwk08/Nudity-Detection-Android-Enhanced.git
+cd Nudity-Detection-Android-Enhanced
 ```
 
 2. **Connect your Android device**
