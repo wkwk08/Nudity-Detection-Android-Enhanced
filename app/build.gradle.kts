@@ -33,6 +33,10 @@ android {
         jvmTarget = "17"
     }
 
+    aaptOptions {
+        noCompress("tflite")
+    }
+
     buildFeatures {
         compose = true
     }
@@ -60,6 +64,10 @@ dependencies {
     // Compose Preview
     debugImplementation("androidx.compose.ui:ui-tooling:1.6.0")
     implementation("androidx.compose.ui:ui-tooling-preview:1.6.0")
+
+    // TensorFlow Lite dependencies
+    implementation("org.tensorflow:tensorflow-lite:2.13.0")
+    implementation("org.tensorflow:tensorflow-lite-support:0.4.4")
 
     // Add JUnit 5 for unit tests
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.2")
